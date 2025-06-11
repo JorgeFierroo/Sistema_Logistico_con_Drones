@@ -1,52 +1,50 @@
 import streamlit as st
-import streamlit as st
 import networkx as nx
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 
-st.set_page_config(page_title="Drone Logistics Simulator", layout="wide")
+st.set_page_config(page_title="Simulador de Logística con Drones", layout="wide")
 
-st.markdown("# 🚁 Drone Logistics Simulator - Correos Chile")
+st.markdown("# 🚁 Simulador de Logística con Drones - Correos Chile")
 
 # Leyenda de proporciones
 st.markdown("""
-**Node Role Proportions:**
-- 📦 Storage Nodes: 20%
-- 🔋 Recharge Nodes: 20%
-- 👤 Client Nodes: 60%
+**Proporciones de roles de nodos:**
+- 📦 Nodos de Almacenamiento: 20%
+- 🔋 Nodos de Recarga: 20%
+- 👤 Nodos de Clientes: 60%
 """)
 
 # Pestañas
-tabs = st.tabs(["🔄 Run Simulation", "🔎 Explore Network", "🌐 Clients & Orders", "📋 Route Analytics", "📈 Statistics"])
+tabs = st.tabs(["🔄 Ejecutar Simulación", "🔎 Explorar Red", "🌐 Clientes y Pedidos", "📋 Análisis de ruta", "📈 Estadísticas"])
 
 # Contenido de la primera pestaña
 with tabs[0]:
 
     
-    st.markdown("# ⚙️ Initialize Simulation")
+    st.markdown("# ⚙️ Inicializar Simulación")
 
     # Sliders
-    num_nodes = st.slider("Number of Nodes", min_value=10, max_value=150, value=15)
-    num_edges = st.slider("Number of Edges", min_value=10, max_value=300, value=20)
-    num_orders = st.slider("Number of Orders", min_value=1, max_value=500, value=10)
+    num_nodes = st.slider("Número de Nodos", min_value=10, max_value=150, value=15)
+    num_edges = st.slider("Número de Conexiones", min_value=10, max_value=300, value=20)
+    num_orders = st.slider("Número de Pedidos", min_value=1, max_value=500, value=10)
 
     # Cálculo de clientes (60%)
     num_clients = int(num_nodes * 0.6)
-    st.markdown(f"**Derived Client Nodes:** {num_clients} (60% of {num_nodes})")
+    st.markdown(f"**Nodos de Cliente Derivados:** {num_clients} (60% of {num_nodes})")
 
     # Botón
-    if st.button("🚀 Start Simulation"):
+    if st.button("🚀 Iniciar Simulación"):
         st.session_state["boton_presionado"] = True
-        st.success("Simulation initialized successfully!")
+        st.success("¡Simulación iniciada correctamente!")
 
 with tabs[1]:
 
-    st.markdown("# 🌍 Network Visualization")
+    st.markdown("# 🌍 Visualización de la Red")
 
     if not st.session_state.get("boton_presionado", False):
-        st.warning("⚠️ Initialize a simulation first.")
+        st.warning("⚠️ Primero debes iniciar una simulación.")
     else:
         # Crear dos columnas (50% y 50%)
         left_col, right_col = st.columns(2)
@@ -65,50 +63,49 @@ with tabs[1]:
                 nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray", ax=ax)
                 st.pyplot(fig)
                 
-                if st.button("✅ Create Delivery and Create Order"):
-                    # Aquí puedes usar las opciones seleccionadas
-                    st.success("Order created and delivered for client")
+                if st.button("✅ Crear Entrega y Pedido"):
+                    st.success("Pedido creado y entregado al cliente.")
 
         with right_col:
-            st.subheader("📌 Calculate Route")
+            st.subheader("📌 Calcular Ruta")
 
             option1 = st.selectbox("Seleccione opción 1", ["Opción A", "Opción B", "Opción C"])
             option2 = st.selectbox("Seleccione opción 2", ["Valor 1", "Valor 2", "Valor 3"])
 
-            if st.button("✈️ Calculate Route"):
+            if st.button("✈️ Calcular Ruta"):
                 # Aquí puedes usar las opciones seleccionadas
-                st.success("Order created and delivered for client with options")
+                st.success("Pedido creado y entregado al cliente con opciones.")
         
 
 
 with tabs[2]:
-    st.markdown("# 🌐 Clients and Orders")
+    st.markdown("# 🌐 Clientes y Pedidos")
 
     if not st.session_state.get("boton_presionado", False):
-        st.warning("⚠️ Initialize a simulation first.")
+        st.warning("⚠️ Primero debes iniciar una simulación.")
     else:
         pass
 
 with tabs[3]:
-    st.markdown("# 📋 Route Frequency & History") 
+    st.markdown("# 📋 Frecuencia de Rutas e Historial") 
 
     if not st.session_state.get("boton_presionado", False):
-        st.warning("⚠️ Simulation not initialized or AVL route tracker missing.")
+        st.warning("⚠️ Simulación no iniciada o faltan rutas registradas.")
     else:
         pass
 
 with tabs[4]:
-    st.markdown("# 📈 General Statistics")  
+    st.markdown("# 📈 Estadísticas Generales")  
 
     if not st.session_state.get("boton_presionado", False):
-        st.warning("⚠️ Initialize a simulation first.")
+        st.warning("⚠️ Primero debes iniciar una simulación.")
     else:
-        st.subheader("📊 Top Visited Nodes by Role")
+        st.subheader("📊 Nodos Más Visitados por Rol")
         left_col, center_col, right_col = st.columns(3)
 
         with left_col: 
 
-            st.markdown("##### 👤 Most Visited Clients")
+            st.markdown("##### 👤 Clientes más visitados")
 
             categorias = ['A', 'B', 'C', 'D']
             valores = [23, 45, 12, 36]
@@ -140,7 +137,7 @@ with tabs[4]:
 
         with center_col: 
 
-            st.markdown("##### 🔋 Most Visited Recharge Stations")
+            st.markdown("##### 🔋 Estaciones de recarga más visitadas")
 
             categorias = ['A', 'B', 'C', 'D']
             valores = [23, 45, 12, 36]
@@ -172,7 +169,7 @@ with tabs[4]:
 
         with right_col: 
 
-            st.markdown("##### 📦 Most Visited Storage Nodes")
+            st.markdown("##### 📦 Nodos de almacenamiento más visitados")
 
             categorias = ['A', 'B', 'C', 'D']
             valores = [23, 45, 12, 36]
