@@ -1,17 +1,32 @@
-class Order:
-    _id_counter = 0
+# domain/order.py
 
-    def __init__(self, origin, destination, path, cost):
+class Order:
+    _id_counter = 1
+
+    def __init__(self, origin, destination, route=None, cost=None):
+        """
+        Representa una orden de entrega.
+
+        :param origin: Nodo de origen (almacenamiento).
+        :param destination: Nodo de destino (cliente).
+        :param route: Lista de nodos por los que pasa.
+        :param cost: Costo total de la ruta.
+        """
+        self.id = Order._id_counter
         Order._id_counter += 1
-        self.id = f"ORD-{Order._id_counter:04d}"
         self.origin = origin
         self.destination = destination
-        self.path = path  # lista de nodos o strings
+        self.route = route or []
         self.cost = cost
-        self.status = "completed"  # por ahora asumimos entregada tras simular
 
     def __str__(self):
-        return f"{self.id} | From {self.origin} to {self.destination} | Cost: {self.cost}"
+        return f"Order #{self.id}: {self.origin} → {self.destination} | Cost: {self.cost} | Route: {self.route}"
 
-    def __repr__(self):
-        return self.__str__()
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "origin": str(self.origin),
+            "destination": str(self.destination),
+            "cost": self.cost,
+            "route": [str(v) for v in self.route]
+        }

@@ -1,46 +1,36 @@
-class HashMap:
-    def __init__(self, capacity=100):
-        self.capacity = capacity
-        self.table = [[] for _ in range(capacity)]
+import matplotlib.pyplot as plt
+import networkx as nx
 
-    def _hash(self, key):
-        return hash(key) % self.capacity
 
-    def insert(self, key, value):
-        idx = self._hash(key)
-        # Verificar si ya existe y actualizar
-        for i, (k, _) in enumerate(self.table[idx]):
-            if k == key:
-                self.table[idx][i] = (key, value)
-                return
-        self.table[idx].append((key, value))
+def draw_avl_tree(root):
+    """
+    Dibuja un árbol AVL usando NetworkX y matplotlib.
+    Recibe la raíz del árbol y retorna una figura de matplotlib.
+    """
+    if root is None:
+        fig, ax = plt.subplots()
+        ax.text(0.5, 0.5, "No routes registered", ha='center', va='center', fontsize=12)
+        ax.axis('off')
+        return fig
 
-    def get(self, key):
-        idx = self._hash(key)
-        for k, v in self.table[idx]:
-            if k == key:
-                return v
-        return None
+    G = nx.DiGraph()
 
-    def remove(self, key):
-        idx = self._hash(key)
-        self.table[idx] = [(k, v) for (k, v) in self.table[idx] if k != key]
+    def add_edges(node):
+        if node:
+            G.add_node(str(node.key))
+            if node.left:
+                G.add_edge(str(node.key), str(node.left.key))
+                add_edges(node.left)
+            if node.right:
+                G.add_edge(str(node.key), str(node.right.key))
+                add_edges(node.right)
 
-    def contains(self, key):
-        idx = self._hash(key)
-        return any(k == key for (k, _) in self.table[idx])
+    add_edges(root)
 
-    def keys(self):
-        for bucket in self.table:
-            for k, _ in bucket:
-                yield k
+    pos = nx.spring_layout(G, seed=42)  # Usar spring_layout para AVL pequeño-mediano
+    fig, ax = plt.subplots(figsize=(6, 5))
+    nx.draw(G, pos, with_labels=True, node_color="lightgreen", edge_color="gray", node_size=800, font_size=10, ax=ax)
+    ax.set_title("AVL Route Tracker", fontsize=14)
+    ax.set_axis_off()
 
-    def values(self):
-        for bucket in self.table:
-            for _, v in bucket:
-                yield v
-
-    def items(self):
-        for bucket in self.table:
-            for item in bucket:
-                yield item
+    return fig

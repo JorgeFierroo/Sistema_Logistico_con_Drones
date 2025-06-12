@@ -1,51 +1,59 @@
 import random
 from model.graph import Graph
-from model.vertex import Vertex
+from domain.client import Client
+from domain.order import Order
+from domain.route import Route
 
-def generate_connected_graph(n_nodes, m_edges):
-    if m_edges < n_nodes - 1:
-        raise ValueError("El número de aristas debe ser al menos n_nodes - 1 para garantizar conectividad.")
+def initialize_simulation(num_nodes, num_edges, num_orders):
+    graph = Graph(directed=False)
+    vertices = []
 
-    graph = Graph()
-    nodes = []
+    # Asignar roles proporcionalmente
+    roles = (["client"] * int(num_nodes * 0.6) +
+             ["storage"] * int(num_nodes * 0.2) +
+             ["recharge"] * int(num_nodes * 0.2))
+    random.shuffle(roles)
 
-    # Crear vértices y agregarlos al grafo
-    for i in range(n_nodes):
-        node_id = chr(65 + i)  # A, B, C, D...
-        v = Vertex(node_id)
-        v.role = None  # Añadir atributo dinámicamente si no está en __init__
-        nodes.append(graph.insert_vertex(v))
+    # Crear nodos con sus roles
+    for i in range(num_nodes):
+        label = f"N{i}"
+        v = graph.insert_vertex(label)
+        v.role = roles[i]  # Asegúrate de que tu clase Vertex lo soporte
+        vertices.append(v)
 
-    # Conectividad mínima (árbol generador)
-    available = list(nodes)
-    connected = [available.pop()]
-    while available:
-        a = random.choice(connected)
-        b = available.pop(random.randint(0, len(available) - 1))
-        weight = random.randint(1, 20)
+    # Crear grafo conexo base (n - 1 aristas mínimo)
+    connected = set()
+    connected.add(vertices[0])
+    while len(connected) < num_nodes:
+        a = random.choice(list(connected))
+        b = random.choice([v for v in vertices if v not in connected])
+        weight = random.randint(1, 15)
         graph.insert_edge(a, b, weight)
-        connected.append(b)
+        connected.add(b)
 
-    # Aristas adicionales aleatorias
-    edges_added = n_nodes - 1
-    while edges_added < m_edges:
-        u, v = random.sample(nodes, 2)
-        if not graph.has_edge(u, v):
-            weight = random.randint(1, 20)
-            graph.insert_edge(u, v, weight)
-            edges_added += 1
+    # Agregar aristas extra (si se requieren más de n - 1)
+    extra_edges = num_edges - (num_nodes - 1)
+    attempts = 0
+    while extra_edges > 0 and attempts < num_edges * 5:
+        u, v = random.sample(vertices, 2)
+        if graph.get_edge(u, v) is None:
+            cost = random.randint(1, 15)
+            graph.insert_edge(u, v, cost)
+            extra_edges -= 1
+        attempts += 1
 
-    # Asignar roles
-    random.shuffle(nodes)
-    n_storage = int(n_nodes * 0.2)
-    n_recharge = int(n_nodes * 0.2)
+    # Crear órdenes entre almacenamiento y clientes
+    storage_nodes = [v for v in vertices if v.role == "storage"]
+    client_nodes = [v for v in vertices if v.role == "client"]
+    orders = []
+    for _ in range(num_orders):
+        origin = random.choice(storage_nodes)
+        destination = random.choice(client_nodes)
+        orders.append(Order(origin=origin, destination=destination))
 
-    for i, v in enumerate(nodes):
-        if i < n_storage:
-            v.role = "storage"
-        elif i < n_storage + n_recharge:
-            v.role = "recharge"
-        else:
-            v.role = "client"
-
-    return graph, nodes
+    # Retornar información útil para la interfaz
+    return graph, {
+        "storage": storage_nodes,
+        "recharge": [v for v in vertices if v.role == "recharge"],
+        "client": client_nodes
+    }, orders

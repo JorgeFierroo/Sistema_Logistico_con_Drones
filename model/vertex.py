@@ -1,10 +1,11 @@
 class Vertex:
     """Lightweight vertex structure for a graph."""
-    __slots__ = '_element'
+    __slots__ = '_element', 'role'
 
     def __init__(self, element):
         """Do not call constructor directly. Use Graph's insert_vertex(element)."""
         self._element = element
+        self.role = None
 
     def element(self):
         """Return element associated with this vertex."""

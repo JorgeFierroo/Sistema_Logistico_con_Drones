@@ -1,64 +1,99 @@
-#############################################################
-#A ESTE LE DALTA UN CUESTION
-#############################################################
-
+import random
+from model.graph import Graph
+from domain.client import Client
 from domain.order import Order
 from domain.route import Route
-import random
 
-MAX_BATTERY = 50
+class Simulation:
+    def __init__(self):
+        self.graph = Graph(directed=False)
+        self.clients = []
+        self.orders = []
+        self.routes = []
+        self.node_roles = {}  # maps vertex -> role ("client", "storage", "recharge")
 
-def simulate_orders(graph, nodes, n_orders, avl_root=None, clients_dict=None):
-    storage_nodes = [v for v, d in nodes.items() if d["role"] == "📦"]
-    client_nodes = [v for v, d in nodes.items() if d["role"] == "👤"]
-    recharge_nodes = [v for v, d in nodes.items() if d["role"] == "🔋"]
+    def initialize(self, n_nodes, n_edges, n_orders):
+        self.graph = Graph(directed=False)
+        self.clients = []
+        self.orders = []
+        self.routes = []
+        self.node_roles = {}
 
-    orders = []
+        self._create_nodes(n_nodes)
+        self._create_edges(n_edges)
+        self._assign_roles()
+        self._generate_orders(n_orders)
 
-    for _ in range(n_orders):
-        origin = random.choice(storage_nodes)
-        destination = random.choice(client_nodes)
+    def _create_nodes(self, n):
+        for i in range(n):
+            label = chr(65 + i) if i < 26 else f"N{i}"
+            v = self.graph.insert_vertex(label)
+            self.node_roles[v] = None  # initialize without role
 
-        # Buscar ruta válida (batería limitada)
-        path, cost = find_valid_path(graph, origin, destination, recharge_nodes)
+    def _create_edges(self, m):
+        vertices = list(self.graph.vertices())
+        connected = set()
+        if len(vertices) < 2:
+            return
 
-        if path:
-            # Crear orden y ruta
-            route = Route(path, cost, recharge_points=[n for n in path if n in recharge_nodes])
-            order = Order(origin, destination, path, cost)
-            orders.append(order)
+        # Create a spanning tree to ensure connectivity
+        random.shuffle(vertices)
+        for i in range(len(vertices) - 1):
+            u = vertices[i]
+            v = vertices[i + 1]
+            cost = random.randint(1, 20)
+            self.graph.insert_edge(u, v, cost)
+            connected.add((u, v))
 
-            # Guardar en cliente
-            if clients_dict is not None:
-                clients_dict[destination].add_order(order)
+        # Add extra edges
+        while len(list(self.graph.edges())) < m:
+            u, v = random.sample(vertices, 2)
+            if self.graph.get_edge(u, v) is None:
+                cost = random.randint(1, 20)
+                self.graph.insert_edge(u, v, cost)
 
-            # Insertar ruta al AVL
-            if avl_root is not None:
-                from tda.avl import stat_insert
-                route_key = " → ".join(str(n) for n in path)
-                avl_root = stat_insert(avl_root, route_key)
+    def _assign_roles(self):
+        vertices = list(self.graph.vertices())
+        n = len(vertices)
+        num_storage = int(n * 0.2)
+        num_recharge = int(n * 0.2)
+        num_clients = n - num_storage - num_recharge
 
-    return orders, avl_root
+        random.shuffle(vertices)
+        for i, v in enumerate(vertices):
+            if i < num_storage:
+                self.node_roles[v] = "storage"
+            elif i < num_storage + num_recharge:
+                self.node_roles[v] = "recharge"
+            else:
+                self.node_roles[v] = "client"
+                self.clients.append(Client(v.element()))
 
-def find_valid_path(graph, start, end, recharge_nodes):
-    from collections import deque
+    def _generate_orders(self, count):
+        storages = [v for v, r in self.node_roles.items() if r == "storage"]
+        clients = [v for v, r in self.node_roles.items() if r == "client"]
 
-    queue = deque([(start, [start], 0)])
-    visited = set()
+        for _ in range(count):
+            if not storages or not clients:
+                continue
+            origin = random.choice(storages)
+            destination = random.choice(clients)
+            self.orders.append(Order(origin, destination))
 
-    while queue:
-        current, path, cost = queue.popleft()
-        if cost > MAX_BATTERY:
-            continue
-        if current == end:
-            return path, cost
-        visited.add(current)
-        for neighbor in graph.neighbors(current):
-            if neighbor not in visited:
-                edge = graph.get_edge(current, neighbor)
-                next_cost = cost + edge.element()
-                queue.append((neighbor, path + [neighbor], next_cost))
+    def get_node_roles(self):
+        return self.node_roles
 
-    return None, None  # No ruta válida sin recarga
+    def get_orders(self):
+        return self.orders
 
-# Mejorable luego para forzar recarga si no hay ruta directa
+    def get_graph(self):
+        return self.graph
+
+    def get_clients(self):
+        return self.clients
+
+    def get_routes(self):
+        return self.routes
+
+    def add_route(self, route):
+        self.routes.append(route)

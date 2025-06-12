@@ -1,16 +1,15 @@
 class Client:
-    def __init__(self, id_vertex):
-        self.id_vertex = id_vertex  # puede ser string o Vertex
+    def __init__(self, node_id):
+        """
+        Representa un cliente asociado a un nodo en el grafo.
+
+        :param node_id: Identificador del nodo (Vertex) del cliente.
+        """
+        self.node_id = node_id
         self.orders = []
 
     def add_order(self, order):
         self.orders.append(order)
 
-    def total_orders(self):
-        return len(self.orders)
-
     def __str__(self):
-        return f"Client({self.id_vertex}) - {len(self.orders)} order(s)"
-
-    def __repr__(self):
-        return self.__str__()
+        return f"Client({self.node_id}, Orders: {len(self.orders)})"
