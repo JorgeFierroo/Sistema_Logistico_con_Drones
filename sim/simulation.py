@@ -1,8 +1,20 @@
 import random
-from model.graph import Graph
-from domain.client import Client
-from domain.order import Order
-from domain.route import Route
+import sys
+import os
+
+ruta_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model'))
+ruta_domain = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'domain'))
+ruta_tda = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tda'))
+
+sys.path.extend([ruta_model, ruta_domain, ruta_tda])
+
+from graph import Graph
+from client import Client
+from order import Order
+from route import Route
+
+from avl import insert as avl_insert, delete_node as avl_delete, Node as AVLNode
+from hasp_map import HashMap
 
 class Simulation:
     def __init__(self):
@@ -11,6 +23,8 @@ class Simulation:
         self.orders = []
         self.routes = []
         self.node_roles = {}  # maps vertex -> role ("client", "storage", "recharge")
+        self.route_avl = None
+        self.route_counts = HashMap()
 
     def initialize(self, n_nodes, n_edges, n_orders):
         self.graph = Graph(directed=False)
@@ -18,6 +32,8 @@ class Simulation:
         self.orders = []
         self.routes = []
         self.node_roles = {}
+        self.route_avl = None
+        self.route_counts = HashMap()
 
         self._create_nodes(n_nodes)
         self._create_edges(n_edges)
@@ -32,7 +48,6 @@ class Simulation:
 
     def _create_edges(self, m):
         vertices = list(self.graph.vertices())
-        connected = set()
         if len(vertices) < 2:
             return
 
@@ -43,7 +58,6 @@ class Simulation:
             v = vertices[i + 1]
             cost = random.randint(1, 20)
             self.graph.insert_edge(u, v, cost)
-            connected.add((u, v))
 
         # Add extra edges
         while len(list(self.graph.edges())) < m:
@@ -78,7 +92,21 @@ class Simulation:
                 continue
             origin = random.choice(storages)
             destination = random.choice(clients)
-            self.orders.append(Order(origin, destination))
+            order = Order(origin, destination)
+            self.orders.append(order)
+
+            route = Route([origin.element(), destination.element()], cost=0)
+            self.routes.append(route)
+
+            if self.route_avl is None:
+                self.route_avl = AVLNode(str(route))
+            else:
+                self.route_avl = avl_insert(self.route_avl, str(route))
+
+            clave = str(route)
+            valor_actual = self.route_counts.get(clave, 0)
+            self.route_counts.set(clave, valor_actual + 1)
+
 
     def get_node_roles(self):
         return self.node_roles
@@ -95,5 +123,17 @@ class Simulation:
     def get_routes(self):
         return self.routes
 
+    def get_route_avl(self):
+        return self.route_avl
+
+    def get_route_counts(self):
+        return self.route_counts
+
     def add_route(self, route):
         self.routes.append(route)
+        if self.route_avl is None:
+            self.route_avl = AVLNode(str(route))
+        else:
+            self.route_avl = avl_insert(self.route_avl, str(route))
+
+        self.route_counts[str(route)] = self.route_counts.get(str(route), 0) + 1

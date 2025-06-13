@@ -1,17 +1,7 @@
-# domain/order.py
-
 class Order:
     _id_counter = 1
 
     def __init__(self, origin, destination, route=None, cost=None):
-        """
-        Representa una orden de entrega.
-
-        :param origin: Nodo de origen (almacenamiento).
-        :param destination: Nodo de destino (cliente).
-        :param route: Lista de nodos por los que pasa.
-        :param cost: Costo total de la ruta.
-        """
         self.id = Order._id_counter
         Order._id_counter += 1
         self.origin = origin

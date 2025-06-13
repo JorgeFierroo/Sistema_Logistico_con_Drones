@@ -1,5 +1,14 @@
+import sys
+import os
 import streamlit as st
-from sim.simulation import Simulation
+
+ruta_sim = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sim'))
+ruta_orden = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sim'))
+
+sys.path.extend([ruta_sim, ruta_orden])
+
+from init_simulation import run_simulation, get_current_simulation
+from order import Order
 from networkx_adapter import graph_to_networkx, draw_networkx_graph
 
 st.set_page_config(page_title="Drone Logistics Simulator", layout="wide")
@@ -13,14 +22,16 @@ st.markdown("""
 - 👤 Client Nodes: 60%
 """)
 
-# Tabs
-tabs = st.tabs(["🔄 Run Simulation", "🔎 Explore Network", "🌐 Clients & Orders", "📋 Route Analytics", "📈 Statistics"])
+# Pestañas
+tabs = st.tabs([
+    "🔄 Run Simulation",
+    "🔎 Explore Network",
+    "🌐 Clients & Orders",
+    "📋 Route Analytics",
+    "📈 Statistics"
+])
 
-# Create simulation instance
-if "simulation" not in st.session_state:
-    st.session_state.simulation = None
-
-# Tab 1: Run Simulation
+# Pestaña 1: Run Simulation
 with tabs[0]:
     st.markdown("# ⚙️ Initialize Simulation")
     num_nodes = st.slider("Number of Nodes", min_value=10, max_value=150, value=15)
@@ -31,68 +42,84 @@ with tabs[0]:
     st.markdown(f"**Derived Client Nodes:** {num_clients} (60% of {num_nodes})")
 
     if st.button("🚀 Start Simulation"):
-        st.session_state.simulation = Simulation(num_nodes, num_edges, num_orders)
+        simulation = run_simulation(num_nodes, num_edges, num_orders)
+        st.session_state.simulation = simulation
         st.success("Simulation initialized successfully!")
 
-# Tab 2: Explore Network
+# Pestaña 2: Explore Network
 with tabs[1]:
     st.markdown("# 🌍 Network Visualization")
 
-    sim = st.session_state.get("simulation")
-    if not sim:
+    if not st.session_state.get("boton_presionado", False):
         st.warning("⚠️ Initialize a simulation first.")
     else:
-        left_col, right_col = st.columns(2)
+        sim = st.session_state["simulation"]
+        graph = sim.get_graph()
+        roles = sim.get_node_roles()
 
-        with left_col:
-            G_nx = graph_to_networkx(sim.graph)
-            fig = draw_networkx_graph(G_nx)
-            st.pyplot(fig)
+        # Visualización en red
+        st.subheader("🧠 Grafo de red actual")
 
-        with right_col:
-            st.subheader("📌 Calculate Route")
-            node_ids = [str(v.element()) for v in sim.graph.vertices()]
-            origin = st.selectbox("Select origin", node_ids)
-            destination = st.selectbox("Select destination", node_ids)
+        fig = draw_networkx_graph(graph, roles)
+        st.pyplot(fig)
+
+        st.subheader("📌 Calculate Route")
+        vertices = list(graph.vertices())
+
+        if len(vertices) < 2:
+            st.info("Not enough vertices to compute routes.")
+        else:
+            origin = st.selectbox("Select origin", vertices, format_func=str)
+            destination = st.selectbox("Select destination", vertices, format_func=str)
 
             if st.button("✈️ Calculate Route"):
-                path, cost = sim.calculate_route(origin, destination)
+                # Simple BFS
+                from collections import deque
+
+                def bfs_path(g, start, goal):
+                    visited = set()
+                    queue = deque([(start, [start])])
+
+                    while queue:
+                        current, path = queue.popleft()
+                        if current == goal:
+                            return path
+                        visited.add(current)
+                        for neighbor in g.neighbors(current):
+                            if neighbor not in visited:
+                                queue.append((neighbor, path + [neighbor]))
+                    return []
+
+                path = bfs_path(graph, origin, destination)
+
                 if path:
-                    st.success(f"Path: {' → '.join(path)} | Cost: {cost}")
-                    st.session_state["last_path"] = path
+                    sim.add_route(path)
+                    sim.orders.append(Order(origin, destination))
+                    st.success(f"Route found: {' → '.join(str(v) for v in path)}")
                 else:
-                    st.error("No route available within battery limit.")
+                    st.error("No route found between selected nodes.")
 
-            if st.button("✅ Complete Delivery and Create Order"):
-                if "last_path" in st.session_state:
-                    sim.complete_order(st.session_state["last_path"])
-                    st.success("Order completed and recorded.")
-                else:
-                    st.warning("Calculate a route first.")
 
-# Tab 3: Clients and Orders
+# Pestaña 3: Clients & Orders
 with tabs[2]:
     st.markdown("# 🌐 Clients and Orders")
-    sim = st.session_state.get("simulation")
-    if not sim:
+
+    if "simulation" not in st.session_state:
         st.warning("⚠️ Initialize a simulation first.")
     else:
-        st.write("(Client and order management coming soon)")
+        sim = st.session_state.simulation
+        orders = sim.get_orders()
 
-# Tab 4: Route Analytics
+        st.markdown("### 📦 Active Orders")
+        for order in orders:
+            st.write(f"From {order.origin.element()} to {order.destination.element()}")
+
+# Pestaña 4: Route Analytics
 with tabs[3]:
     st.markdown("# 📋 Route Frequency & History")
-    sim = st.session_state.get("simulation")
-    if not sim:
-        st.warning("⚠️ Simulation not initialized or AVL route tracker missing.")
-    else:
-        st.write("(AVL-based route history and frequency analysis coming soon)")
+    st.warning("⚠️ Functionality not implemented yet.")
 
-# Tab 5: General Statistics
+# Pestaña 5: Statistics
 with tabs[4]:
     st.markdown("# 📈 General Statistics")
-    sim = st.session_state.get("simulation")
-    if not sim:
-        st.warning("⚠️ Initialize a simulation first.")
-    else:
-        st.write("(Node frequency charts coming soon)")
+    st.warning("⚠️ Functionality not implemented yet.")

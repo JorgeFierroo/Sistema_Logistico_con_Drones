@@ -1,59 +1,38 @@
-import random
-from model.graph import Graph
-from domain.client import Client
-from domain.order import Order
-from domain.route import Route
+import sys
+import os
 
-def initialize_simulation(num_nodes, num_edges, num_orders):
-    graph = Graph(directed=False)
-    vertices = []
+# Agregar rutas a sys.path para facilitar importaciones
+ruta_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model'))
+ruta_domain = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'domain'))
+ruta_tda = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tda'))
 
-    # Asignar roles proporcionalmente
-    roles = (["client"] * int(num_nodes * 0.6) +
-             ["storage"] * int(num_nodes * 0.2) +
-             ["recharge"] * int(num_nodes * 0.2))
-    random.shuffle(roles)
+sys.path.append(ruta_model)
+sys.path.append(ruta_domain)
+sys.path.append(ruta_tda)
 
-    # Crear nodos con sus roles
-    for i in range(num_nodes):
-        label = f"N{i}"
-        v = graph.insert_vertex(label)
-        v.role = roles[i]  # Asegúrate de que tu clase Vertex lo soporte
-        vertices.append(v)
+from simulation import Simulation
 
-    # Crear grafo conexo base (n - 1 aristas mínimo)
-    connected = set()
-    connected.add(vertices[0])
-    while len(connected) < num_nodes:
-        a = random.choice(list(connected))
-        b = random.choice([v for v in vertices if v not in connected])
-        weight = random.randint(1, 15)
-        graph.insert_edge(a, b, weight)
-        connected.add(b)
+# Instancia global (puede ser reinicializada)
+_simulation_instance = Simulation()
 
-    # Agregar aristas extra (si se requieren más de n - 1)
-    extra_edges = num_edges - (num_nodes - 1)
-    attempts = 0
-    while extra_edges > 0 and attempts < num_edges * 5:
-        u, v = random.sample(vertices, 2)
-        if graph.get_edge(u, v) is None:
-            cost = random.randint(1, 15)
-            graph.insert_edge(u, v, cost)
-            extra_edges -= 1
-        attempts += 1
+def run_simulation(n_nodes: int, n_edges: int, n_orders: int) -> Simulation:
+    """
+    Inicializa una nueva simulación con los parámetros dados.
 
-    # Crear órdenes entre almacenamiento y clientes
-    storage_nodes = [v for v in vertices if v.role == "storage"]
-    client_nodes = [v for v in vertices if v.role == "client"]
-    orders = []
-    for _ in range(num_orders):
-        origin = random.choice(storage_nodes)
-        destination = random.choice(client_nodes)
-        orders.append(Order(origin=origin, destination=destination))
+    Parámetros:
+        - n_nodes: cantidad de nodos del grafo
+        - n_edges: cantidad de aristas
+        - n_orders: cantidad de órdenes
 
-    # Retornar información útil para la interfaz
-    return graph, {
-        "storage": storage_nodes,
-        "recharge": [v for v in vertices if v.role == "recharge"],
-        "client": client_nodes
-    }, orders
+    Retorna:
+        - Instancia de Simulation con grafo, roles, pedidos y rutas.
+    """
+    _simulation_instance.initialize(n_nodes, n_edges, n_orders)
+    return _simulation_instance
+
+def get_current_simulation() -> Simulation:
+    """
+    Devuelve la instancia actual de simulación.
+    Útil para acceder a datos desde otras pestañas.
+    """
+    return _simulation_instance

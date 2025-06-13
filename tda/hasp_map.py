@@ -1,46 +1,39 @@
 class HashMap:
-    def __init__(self, capacity=100):
-        self.capacity = capacity
-        self.table = [[] for _ in range(capacity)]
+    def __init__(self, size=100):
+        self.size = size
+        self.map = [[] for _ in range(size)]
 
     def _hash(self, key):
-        return hash(key) % self.capacity
+        return hash(key) % self.size
 
-    def insert(self, key, value):
-        idx = self._hash(key)
-        # Verificar si ya existe y actualizar
-        for i, (k, _) in enumerate(self.table[idx]):
-            if k == key:
-                self.table[idx][i] = (key, value)
+    def set(self, key, value):
+        index = self._hash(key)
+        for pair in self.map[index]:
+            if pair[0] == key:
+                pair[1] = value
                 return
-        self.table[idx].append((key, value))
+        self.map[index].append([key, value])
 
-    def get(self, key):
-        idx = self._hash(key)
-        for k, v in self.table[idx]:
-            if k == key:
-                return v
-        return None
+    def get(self, key, default=None):  # <-- CAMBIO AQUÍ
+        index = self._hash(key)
+        for pair in self.map[index]:
+            if pair[0] == key:
+                return pair[1]
+        return default  # <-- DEVUELVE el valor por defecto si no lo encuentra
 
     def remove(self, key):
-        idx = self._hash(key)
-        self.table[idx] = [(k, v) for (k, v) in self.table[idx] if k != key]
-
-    def contains(self, key):
-        idx = self._hash(key)
-        return any(k == key for (k, _) in self.table[idx])
+        index = self._hash(key)
+        for i, pair in enumerate(self.map[index]):
+            if pair[0] == key:
+                del self.map[index][i]
+                return True
+        return False
 
     def keys(self):
-        for bucket in self.table:
-            for k, _ in bucket:
-                yield k
+        return [pair[0] for bucket in self.map for pair in bucket]
 
     def values(self):
-        for bucket in self.table:
-            for _, v in bucket:
-                yield v
+        return [pair[1] for bucket in self.map for pair in bucket]
 
     def items(self):
-        for bucket in self.table:
-            for item in bucket:
-                yield item
+        return [(pair[0], pair[1]) for bucket in self.map for pair in bucket]
