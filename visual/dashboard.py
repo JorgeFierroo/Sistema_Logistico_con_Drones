@@ -1,14 +1,22 @@
 import sys
 import os
 import streamlit as st
+import networkx as nx
+import matplotlib.pyplot as plt
+import numpy as np
 
-ruta_sim = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sim'))
-ruta_orden = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sim'))
 
-sys.path.extend([ruta_sim, ruta_orden])
+current_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
 
-from init_simulation import run_simulation, get_current_simulation
-from order import Order
+# Agregar las rutas necesarias (ajusta según tu estructura real)
+sys.path.append(project_root)  # Raíz del proyecto
+sys.path.append(os.path.join(project_root, 'sim')) 
+sys.path.append(os.path.join(project_root, 'domain')) 
+
+from sim.init_simulation import run_simulation, get_current_simulation
+from sim.simulation import Simulation
+from domain.order import Order
 from networkx_adapter import graph_to_networkx, draw_networkx_graph
 
 st.set_page_config(page_title="Drone Logistics Simulator", layout="wide")
@@ -44,6 +52,7 @@ with tabs[0]:
     if st.button("🚀 Start Simulation"):
         simulation = run_simulation(num_nodes, num_edges, num_orders)
         st.session_state.simulation = simulation
+        st.session_state.boton_presionado = True
         st.success("Simulation initialized successfully!")
 
 # Pestaña 2: Explore Network
@@ -53,53 +62,37 @@ with tabs[1]:
     if not st.session_state.get("boton_presionado", False):
         st.warning("⚠️ Initialize a simulation first.")
     else:
-        sim = st.session_state["simulation"]
-        graph = sim.get_graph()
-        roles = sim.get_node_roles()
+                # Crear dos columnas (50% y 50%)
+        left_col, right_col = st.columns(2)
 
-        # Visualización en red
-        st.subheader("🧠 Grafo de red actual")
+        with left_col:
 
-        fig = draw_networkx_graph(graph, roles)
-        st.pyplot(fig)
+            # Grafo simple de ejemplo
+            G = nx.Graph()
+            G.add_edges_from([("A", "B"), ("B", "C"), ("C", "D"), ("D", "A")])
 
-        st.subheader("📌 Calculate Route")
-        vertices = list(graph.vertices())
+            if len(G.nodes) == 0:
+                st.warning("No hay nodos para mostrar en el grafo.")
+            else:
+                pos = nx.spring_layout(G)
+                fig, ax = plt.subplots(figsize=(5, 4))
+                nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray", ax=ax)
+                st.pyplot(fig)
+                
+                if st.button("✅ Create Delivery and Create Order"):
+                    # Aquí puedes usar las opciones seleccionadas
+                    st.success("Order created and delivered for client")
 
-        if len(vertices) < 2:
-            st.info("Not enough vertices to compute routes.")
-        else:
-            origin = st.selectbox("Select origin", vertices, format_func=str)
-            destination = st.selectbox("Select destination", vertices, format_func=str)
+        with right_col:
+            st.subheader("📌 Calculate Route")
+
+            option1 = st.selectbox("Seleccione opción 1", ["Opción A", "Opción B", "Opción C"])
+            option2 = st.selectbox("Seleccione opción 2", ["Valor 1", "Valor 2", "Valor 3"])
 
             if st.button("✈️ Calculate Route"):
-                # Simple BFS
-                from collections import deque
-
-                def bfs_path(g, start, goal):
-                    visited = set()
-                    queue = deque([(start, [start])])
-
-                    while queue:
-                        current, path = queue.popleft()
-                        if current == goal:
-                            return path
-                        visited.add(current)
-                        for neighbor in g.neighbors(current):
-                            if neighbor not in visited:
-                                queue.append((neighbor, path + [neighbor]))
-                    return []
-
-                path = bfs_path(graph, origin, destination)
-
-                if path:
-                    sim.add_route(path)
-                    sim.orders.append(Order(origin, destination))
-                    st.success(f"Route found: {' → '.join(str(v) for v in path)}")
-                else:
-                    st.error("No route found between selected nodes.")
-
-
+                # Aquí puedes usar las opciones seleccionadas
+                st.success("Order created and delivered for client with options")
+    
 # Pestaña 3: Clients & Orders
 with tabs[2]:
     st.markdown("# 🌐 Clients and Orders")
@@ -107,12 +100,27 @@ with tabs[2]:
     if "simulation" not in st.session_state:
         st.warning("⚠️ Initialize a simulation first.")
     else:
-        sim = st.session_state.simulation
-        orders = sim.get_orders()
 
-        st.markdown("### 📦 Active Orders")
-        for order in orders:
-            st.write(f"From {order.origin.element()} to {order.destination.element()}")
+        st.markdown("### Clientes")
+
+        sim = st.session_state.simulation
+
+        clients = sim.clients
+
+        # Convertir a JSON
+        clients_json = [client.to_dict() for client in clients]
+
+        st.json(clients_json)
+
+        st.markdown("### Ordenes")
+
+        
+        orders = sim.orders
+
+        # Convertir a JSON
+        orders_json = [order.to_dict() for order in orders]
+
+        st.json(orders_json)
 
 # Pestaña 4: Route Analytics
 with tabs[3]:
@@ -121,5 +129,111 @@ with tabs[3]:
 
 # Pestaña 5: Statistics
 with tabs[4]:
-    st.markdown("# 📈 General Statistics")
-    st.warning("⚠️ Functionality not implemented yet.")
+    st.markdown("# 📈 General Statistics")  
+
+    if not st.session_state.get("boton_presionado", False):
+        st.warning("⚠️ Initialize a simulation first.")
+    else:
+        st.subheader("📊 Top Visited Nodes by Role")
+        left_col, center_col, right_col = st.columns(3)
+
+        with left_col: 
+
+            st.markdown("##### 👤 Most Visited Clients")
+
+            visits_by_role = simulation.get_visits_by_role()
+            clients = visits_by_role["client"]
+
+            categorias = list(clients.keys())
+            valores = list(clients.values())
+
+            # Crear figura y ejes con fondo transparente
+            fig, ax = plt.subplots(facecolor='none')
+
+            # Dibujar gráfico de barras (con zorder alto para que estén por encima del grid)
+            ax.bar(categorias, valores, color='skyblue', zorder=3)
+
+            # Fondo transparente
+            ax.set_facecolor('none')
+            fig.patch.set_alpha(0.0)
+
+            # Líneas horizontales sólidas detrás de las barras
+            ax.yaxis.grid(True, color='#222222', linestyle='-', linewidth=0.7, zorder=1)
+            ax.xaxis.grid(False)
+
+            ax.tick_params(axis='y', length=0, colors='white')  # Eje Y sin líneas, texto blanco
+            ax.tick_params(axis='x', length=0, colors='white')  # Eje X sin líneas, texto blanco
+
+            # Quitar el marco
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+            # Mostrar en Streamlit
+            st.pyplot(fig)
+
+
+        with center_col: 
+
+            st.markdown("##### 🔋 Most Visited Recharge Stations")
+
+            recharge = visits_by_role["recharge"]
+
+            categorias = list(recharge.keys())
+            valores = list(recharge.values())
+
+            # Crear figura y ejes con fondo transparente
+            fig, ax = plt.subplots(facecolor='none')
+
+            # Dibujar gráfico de barras (con zorder alto para que estén por encima del grid)
+            ax.bar(categorias, valores, color='skyblue', zorder=3)
+
+            # Fondo transparente
+            ax.set_facecolor('none')
+            fig.patch.set_alpha(0.0)
+
+            # Líneas horizontales sólidas detrás de las barras
+            ax.yaxis.grid(True, color='#222222', linestyle='-', linewidth=0.7, zorder=1)
+            ax.xaxis.grid(False)
+
+            ax.tick_params(axis='y', length=0, colors='white')  # Eje Y sin líneas, texto blanco
+            ax.tick_params(axis='x', length=0, colors='white')  # Eje X sin líneas, texto blanco
+
+            # Quitar el marco
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+            # Mostrar en Streamlit
+            st.pyplot(fig)
+
+        with right_col: 
+
+            st.markdown("##### 📦 Most Visited Storage Nodes")
+
+            storage = visits_by_role["storage"]
+
+            categorias = list(storage.keys())
+            valores = list(storage.values())
+
+            # Crear figura y ejes con fondo transparente
+            fig, ax = plt.subplots(facecolor='none')
+
+            # Dibujar gráfico de barras (con zorder alto para que estén por encima del grid)
+            ax.bar(categorias, valores, color='skyblue', zorder=3)
+
+            # Fondo transparente
+            ax.set_facecolor('none')
+            fig.patch.set_alpha(0.0)
+
+            # Líneas horizontales sólidas detrás de las barras
+            ax.yaxis.grid(True, color='#222222', linestyle='-', linewidth=0.7, zorder=1)
+            ax.xaxis.grid(False)
+
+            ax.tick_params(axis='y', length=0, colors='white')  # Eje Y sin líneas, texto blanco
+            ax.tick_params(axis='x', length=0, colors='white')  # Eje X sin líneas, texto blanco
+
+            # Quitar el marco
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+            # Mostrar en Streamlit
+            st.pyplot(fig)

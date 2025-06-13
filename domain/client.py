@@ -1,10 +1,23 @@
+import random
+
 class Client:
-    def __init__(self, node_id):
-        self.node_id = node_id
+
+    _contador = 0
+
+    def __init__(self):
+        Client._contador += 1
+        self.client_id = f"C{Client._contador:03d}"
+        self.name = f"Client{Client._contador}"
+        self.type = random.choice(["alta", "media", "baja"])
         self.orders = []
 
     def add_order(self, order):
         self.orders.append(order)
 
-    def __str__(self):
-        return f"Client({self.node_id}, Orders: {len(self.orders)})"
+    def to_dict(self):
+        return {
+            "cliente_id": self.client_id,
+            "Nombre": self.name,
+            "Tipo": self.type,
+            "Ordenes": len(self.orders)
+        }

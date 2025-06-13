@@ -12,3 +12,6 @@ class Route:
             "path": [str(v) for v in self.path],
             "cost": self.cost
         }
+    
+    def get_cost(self):
+        return self.cost
