@@ -2,19 +2,25 @@ import random
 import sys
 import os
 
-ruta_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model'))
-ruta_domain = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'domain'))
-ruta_tda = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tda'))
+current_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
 
-sys.path.extend([ruta_model, ruta_domain, ruta_tda])
+# Agregar las rutas necesarias
+sys.path.insert(0, project_root)  # RaÃz del proyecto
+sys.path.append(os.path.join(project_root, 'domain'))
+sys.path.append(os.path.join(project_root, 'model'))
+sys.path.append(os.path.join(project_root, 'sim'))
+sys.path.append(os.path.join(project_root, 'tda'))
 
-from graph import Graph
-from client import Client
-from order import Order
-from route import Route
 
-from avl import insert as avl_insert, delete_node as avl_delete, Node as AVLNode
-from hasp_map import HashMap
+
+from domain.client import Client
+from domain.order import Order
+from domain.route import Route
+from model.graph import Graph
+
+from tda.avl import insert as avl_insert, delete_node as avl_delete, Node as AVLNode
+from tda.hasp_map import HashMap
 
 class Simulation:
     def __init__(self):
@@ -81,7 +87,7 @@ class Simulation:
                 self.node_roles[v] = "recharge"
             else:
                 self.node_roles[v] = "client"
-                self.clients.append(Client(v.element()))
+                self.clients.append(Client())
 
     def _generate_orders(self, count):
         storages = [v for v, r in self.node_roles.items() if r == "storage"]
@@ -97,6 +103,8 @@ class Simulation:
 
             route = Route([origin.element(), destination.element()], cost=0)
             self.routes.append(route)
+            order.route_cost = route.get_cost()
+
 
             if self.route_avl is None:
                 self.route_avl = AVLNode(str(route))
@@ -137,3 +145,23 @@ class Simulation:
             self.route_avl = avl_insert(self.route_avl, str(route))
 
         self.route_counts[str(route)] = self.route_counts.get(str(route), 0) + 1
+
+    def get_visits_by_role(self):
+        counts = {}  # vertex.element() -> cantidad
+
+        for route in self.routes:
+            for node_label in route.path:
+                counts[node_label] = counts.get(node_label, 0) + 1
+
+        result = {
+            "client": {},
+            "recharge": {},
+            "storage": {}
+        }
+
+        for vertex, role in self.node_roles.items():
+            label = vertex.element()
+            if role in result:
+                result[role][label] = counts.get(label, 0)
+
+        return result
