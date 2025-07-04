@@ -1,16 +1,25 @@
-class Client:
-    def __init__(self, id_vertex):
-        self.id_vertex = id_vertex  # puede ser string o Vertex
-        self.orders = []
+import random
 
-    def add_order(self, order):
-        self.orders.append(order)
+class Cliente:
+    _contador = 0  # Variable de clase para contar instancias
 
-    def total_orders(self):
-        return len(self.orders)
+    def __init__(self, total_pedidos=0):
+        Cliente._contador += 1
+        self.client_id = f"C{Cliente._contador:03d}"  # Formato C001, C002...
+        self.nombre = f"Cliente{Cliente._contador}"
+        self.total_pedidos = total_pedidos
 
     def __str__(self):
-        return f"Client({self.id_vertex}) - {len(self.orders)} order(s)"
+        return f"{self.client_id} - {self.nombre} - Pedidos: {self.total_pedidos}"
+    
+def crear_clientes(n):
+    clientes = []
+    for i in range(n):
+        r = random.randint(0, 2)
+        cliente = Cliente()
+        clientes.append(cliente)
+    return clientes
 
-    def __repr__(self):
-        return self.__str__()
+
+clientes =crear_clientes(10)
+print([str(cliente) for cliente in clientes])

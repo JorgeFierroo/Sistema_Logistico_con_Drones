@@ -1,17 +1,26 @@
-class Order:
-    _id_counter = 0
+from datetime import datetime
 
-    def __init__(self, origin, destination, path, cost):
-        Order._id_counter += 1
-        self.id = f"ORD-{Order._id_counter:04d}"
-        self.origin = origin
-        self.destination = destination
-        self.path = path  # lista de nodos o strings
-        self.cost = cost
-        self.status = "completed"  # por ahora asumimos entregada tras simular
+class Pedido:
+    def __init__(self, id_pedido: str, cliente: object, id_cliente: str,
+                 origen: str, destino: str, costo_ruta: float,
+                 prioridad: int = 0, estado: str = "pendiente"):
+        self.id_pedido = id_pedido
+        self.cliente = cliente
+        self.id_cliente = id_cliente
+        self.origen = origen
+        self.destino = destino
+        self.estado = estado  
+        self.prioridad = prioridad
+        self.creado_en = datetime.now()
+        self.entregado_en = None
+        self.costo_ruta = costo_ruta
 
-    def __str__(self):
-        return f"{self.id} | From {self.origin} to {self.destination} | Cost: {self.cost}"
+    def marcar_como_entregado(self):
+        self.estado = "entregado"
+        self.entregado_en = datetime.now()
 
     def __repr__(self):
-        return self.__str__()
+        return (f"Pedido(ID: {self.id_pedido}, Cliente: {self.cliente.name}, "
+                f"Estado: {self.estado}, Prioridad: {self.prioridad}, "
+                f"Creado: {self.creado_en}, Entregado: {self.entregado_en}, "
+                f"Costo: {self.costo_ruta})")

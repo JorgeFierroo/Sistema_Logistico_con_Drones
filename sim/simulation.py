@@ -1,10 +1,24 @@
+
 #############################################################
 #A ESTE LE DALTA UN CUESTION
 #############################################################
 
 from domain.order import Order
 from domain.route import Route
+from domain.client import Cliente
 import random
+
+class Simulacion:
+    def __init__(self):
+        pass
+    
+    def crear_clientes(n):
+        clientes = []
+        for i in range(n):
+            cliente = Cliente()
+            clientes.append(cliente)
+        return clientes
+
 
 MAX_BATTERY = 50
 

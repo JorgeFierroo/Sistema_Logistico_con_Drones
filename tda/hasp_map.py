@@ -1,46 +1,46 @@
-class HashMap:
-    def __init__(self, capacity=100):
-        self.capacity = capacity
-        self.table = [[] for _ in range(capacity)]
+class MapHash:
+    def __init__(self, capacidad=100):
+        self.capacidad = capacidad
+        self.tabla = [[] for _ in range(capacidad)]
 
-    def _hash(self, key):
-        return hash(key) % self.capacity
+    def _hash(self, clave):
+        return hash(clave) % self.capacidad
 
-    def insert(self, key, value):
-        idx = self._hash(key)
+    def insertar(self, clave, valor):
+        indice = self._hash(clave)
         # Verificar si ya existe y actualizar
-        for i, (k, _) in enumerate(self.table[idx]):
-            if k == key:
-                self.table[idx][i] = (key, value)
+        for i, (k, _) in enumerate(self.tabla[indice]):
+            if k == clave:
+                self.tabla[indice][i] = (clave, valor)
                 return
-        self.table[idx].append((key, value))
+        self.tabla[indice].append((clave, valor))
 
-    def get(self, key):
-        idx = self._hash(key)
-        for k, v in self.table[idx]:
-            if k == key:
+    def obtener(self, clave):
+        indice = self._hash(clave)
+        for k, v in self.tabla[indice]:
+            if k == clave:
                 return v
         return None
 
-    def remove(self, key):
-        idx = self._hash(key)
-        self.table[idx] = [(k, v) for (k, v) in self.table[idx] if k != key]
+    def eliminar(self, clave):
+        indice = self._hash(clave)
+        self.tabla[indice] = [(k, v) for (k, v) in self.tabla[indice] if k != clave]
 
-    def contains(self, key):
-        idx = self._hash(key)
-        return any(k == key for (k, _) in self.table[idx])
+    def contiene(self, clave):
+        indice = self._hash(clave)
+        return any(k == clave for (k, _) in self.tabla[indice])
 
-    def keys(self):
-        for bucket in self.table:
-            for k, _ in bucket:
+    def claves(self):
+        for cubeta in self.tabla:
+            for k, _ in cubeta:
                 yield k
 
-    def values(self):
-        for bucket in self.table:
-            for _, v in bucket:
+    def valores(self):
+        for cubeta in self.tabla:
+            for _, v in cubeta:
                 yield v
 
-    def items(self):
-        for bucket in self.table:
-            for item in bucket:
-                yield item
+    def elementos(self):
+        for cubeta in self.tabla:
+            for elemento in cubeta:
+                yield elemento

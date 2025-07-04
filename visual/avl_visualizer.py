@@ -1,3 +1,5 @@
+from model.graph import Grafo
+
 class HashMap:
     def __init__(self, capacity=100):
         self.capacity = capacity

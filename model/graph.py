@@ -1,61 +1,61 @@
 from vertex import Vertex
 from edge import Edge
 
-class Graph:
-    def __init__(self, directed=False):
-        self._outgoing = {}
-        self._incoming = {} if directed else self._outgoing
-        self._directed = directed
+class Grafo:
+    def __init__(self, dirigido=False):
+        self._adyacentes_salida = {}
+        self._adyacentes_entrada = {} if dirigido else self._adyacentes_salida
+        self._dirigido = dirigido
 
-    def is_directed(self):
-        return self._directed
+    def es_dirigido(self):
+        return self._dirigido
 
-    def insert_vertex(self, element):
-        v = Vertex(element)
-        self._outgoing[v] = {}
-        if self._directed:
-            self._incoming[v] = {}
+    def insertar_vertice(self, elemento):
+        v = Vertex(elemento)
+        self._adyacentes_salida[v] = {}
+        if self._dirigido:
+            self._adyacentes_entrada[v] = {}
         return v
 
-    def insert_edge(self, u, v, element):
-        e = Edge(u, v, element)
-        self._outgoing[u][v] = e
-        self._incoming[v][u] = e
+    def insertar_arista(self, u, v, elemento):
+        e = Edge(u, v, elemento)
+        self._adyacentes_salida[u][v] = e
+        self._adyacentes_entrada[v][u] = e
         return e
 
-    def remove_edge(self, u, v):
-        if u in self._outgoing and v in self._outgoing[u]:
-            del self._outgoing[u][v]
-            del self._incoming[v][u]
+    def eliminar_arista(self, u, v):
+        if u in self._adyacentes_salida and v in self._adyacentes_salida[u]:
+            del self._adyacentes_salida[u][v]
+            del self._adyacentes_entrada[v][u]
 
-    def remove_vertex(self, v):
-        for u in list(self._outgoing.get(v, {})):
-            self.remove_edge(v, u)
-        for u in list(self._incoming.get(v, {})):
-            self.remove_edge(u, v)
-        self._outgoing.pop(v, None)
-        if self._directed:
-            self._incoming.pop(v, None)
+    def eliminar_vertice(self, v):
+        for u in list(self._adyacentes_salida.get(v, {})):
+            self.eliminar_arista(v, u)
+        for u in list(self._adyacentes_entrada.get(v, {})):
+            self.eliminar_arista(u, v)
+        self._adyacentes_salida.pop(v, None)
+        if self._dirigido:
+            self._adyacentes_entrada.pop(v, None)
 
-    def get_edge(self, u, v):
-        return self._outgoing.get(u, {}).get(v)
+    def obtener_arista(self, u, v):
+        return self._adyacentes_salida.get(u, {}).get(v)
 
     def vertices(self):
-        return self._outgoing.keys()
+        return self._adyacentes_salida.keys()
 
-    def edges(self):
-        seen = set()
-        for map in self._outgoing.values():
-            seen.update(map.values())
-        return seen
+    def aristas(self):
+        vistas = set()
+        for mapa in self._adyacentes_salida.values():
+            vistas.update(mapa.values())
+        return vistas
 
-    def neighbors(self, v):
-        return self._outgoing[v].keys()
+    def vecinos(self, v):
+        return self._adyacentes_salida[v].keys()
 
-    def degree(self, v, outgoing=True):
-        adj = self._outgoing if outgoing else self._incoming
-        return len(adj[v])
+    def grado(self, v, salida=True):
+        ady = self._adyacentes_salida if salida else self._adyacentes_entrada
+        return len(ady[v])
 
-    def incident_edges(self, v, outgoing=True):
-        adj = self._outgoing if outgoing else self._incoming
-        return adj[v].values()
+    def aristas_incidentes(self, v, salida=True):
+        ady = self._adyacentes_salida if salida else self._adyacentes_entrada
+        return ady[v].values()
