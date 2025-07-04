@@ -30,15 +30,17 @@ class Order:
 
     def to_dict(self):
         return {
-            "Id_orden": self.order_id,
-            "Origen": str(self.origin),
-            "Destino": str(self.destination),
-            "Estado": self.status,
-            "Prioridad": self.priority,
-            "Creado en": self.created_at,
-            "Entregado en": self.delivered_at,
-            "Costo de ruta": self.route_cost,
-            "Batería usada": self.battery_used,
-            "Recargas": [str(r) for r in self.recharges],
-            "Ruta completa": [str(n) for n in self.full_path]
-        }
+        "Id_orden":       self.order_id,
+        "Origen":         str(self.origin),
+        "Destino":        str(self.destination),
+        "Estado":         self.status,
+        "Prioridad":      self.priority,
+        "Creado_en":      self.created_at.isoformat(),       # <-- string
+        "Entregado_en":   self.delivered_at.isoformat() if self.delivered_at else None,
+        "Costo_de_ruta":  self.route_cost,
+        "Bateria_usada":  self.battery_used,
+        "Recargas":       [str(r) for r in self.recharges],
+        "Ruta_completa":  [str(n) for n in self.full_path],
+        "Id_cliente":     self.id_cliente,
+        "Cliente":        self.cliente.name if self.cliente else None
+    }

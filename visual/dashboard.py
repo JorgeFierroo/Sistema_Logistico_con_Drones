@@ -102,15 +102,28 @@ with tabs[1]:
                 d_v = next(v for v in sim.graph.vertices() if str(v) == destination)
                 if st.button("🚁 Entregar Orden"):
                     res = flight_summary(sim, o_v, d_v)
-                    save_simulation(sim)
                     if res:
                         info, order = res
                         st.success(f"✅ Entregado | Cost: {info['dist']} | Battery: {info['battery_used']}")
                         st.session_state.last_path = info['path']
+                        save_simulation(sim)
+
+                        # -------- Enviar orden al backend -------- #
+                        import requests
+                        try:
+                            response = requests.post(
+                                "http://localhost:8000/ordenes/crear",     # <- nuevo endpoint
+                                json=order.to_dict()
+                            )
+                            if response.status_code == 201:
+                                st.info("📨 Orden guardada en backend.")
+                            else:
+                                st.warning("⚠️ Orden local creada, pero backend respondió con error.")
+                        except Exception as e:
+                            st.warning(f"❌ No se pudo conectar al backend: {e}")
                     else:
                         st.error("❌ No ruta viable con la autonomía actual.")
-            else:
-                st.info("Selecciona origen y destino en la columna de la derecha.")
+
             
 
         with col2:
@@ -121,12 +134,12 @@ with tabs[1]:
             clients  = [str(v) for v in sim.graph.vertices() if sim.node_roles[v] == "client"]
             storages = [str(v) for v in sim.graph.vertices() if sim.node_roles[v] == "storage"]
 
-            origin = st.selectbox("Nodo Origen (Solo almacen)", storages, key="origin_select")
-            destination = st.selectbox("Nodo Destino (Solo cliente)", clients, key="dest_select")
+            origin = st.selectbox("Origin Node (Storage Only)", storages, key="origin_select")
+            destination = st.selectbox("Destination Node (Client Only)", clients, key="dest_select")
 
             # --- Selector de algoritmo ---
             st.markdown("### Routing Algorithm")
-            algorithm = st.radio("Algoritmo de ruta", ["Dijkstra"], index=0)
+            algorithm = st.radio("", ["Dijkstra"], index=0)
 
             # --- Botones ---
             if st.button("Calculate Route"):
@@ -139,9 +152,9 @@ with tabs[1]:
                             for i in range(len(path)-1))
                     st.session_state.last_path = path
                     st.success("Calcular Ruta")
-                    st.write(f"*Path:* {' → '.join(str(v) for v in path)}")
-                    st.write(f"*Costo:* {cost}  |  *Bateria usada:* {used_bat}")
-                    st.write("🔋 *Recargas:* " + (", ".join(str(v) for v in recs) if recs else "None"))
+                    st.write(f"**Path:** {' → '.join(str(v) for v in path)}")
+                    st.write(f"**Costo:** {cost}  |  **Bateria usada:** {used_bat}")
+                    st.write("🔋 **Recargas:** " + (", ".join(str(v) for v in recs) if recs else "None"))
                 else:
                     st.error("No valid route found.")
 
@@ -155,9 +168,9 @@ with tabs[1]:
             recharge_count = len([v for v in sim.graph.vertices() if sim.node_roles[v] == "recharge"])
             client_count   = len([v for v in sim.graph.vertices() if sim.node_roles[v] == "client"])
 
-            st.markdown(f"- 📦 *Storage Nodes:* {storage_count}")
-            st.markdown(f"- 🔋 *Recharge Nodes:* {recharge_count}")
-            st.markdown(f"- 👤 *Client Nodes:* {client_count}")
+            st.markdown(f"- 📦 **Storage Nodes:** {storage_count}")
+            st.markdown(f"- 🔋 **Recharge Nodes:** {recharge_count}")
+            st.markdown(f"- 👤 **Client Nodes:** {client_count}")
 
 # ---------- Pestaña 3 (Clients & Orders) ----------
 with tabs[2]:

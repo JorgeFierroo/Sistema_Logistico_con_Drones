@@ -27,3 +27,7 @@ class Client:
 
     def __repr__(self):
         return self.__str__()
+
+    def get_orders(self):
+        """Devuelve la lista de órdenes asociadas a este cliente."""
+        return self.orders

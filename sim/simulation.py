@@ -14,7 +14,7 @@ from domain.order  import Order
 from domain.route  import Route          # <-- ahora se usa
 from model.graph   import Graph
 from tda.avl       import insert as avl_insert, Node as AVLNode
-from tda.hasp_map  import HashMap
+from tda.hash_map  import HashMap
 
 class Simulation:
     def __init__(self):
@@ -24,7 +24,7 @@ class Simulation:
         self.routes       = []          # objetos Route (historial)
         self.node_roles   = {}          # Vertex -> role
         self.route_avl    = None        # AVL para rutas
-        self.route_counts = HashMap()   # HashMap ruta_str -> freq
+        self.route_counts = HashMap()   # hashMap ruta_str -> freq
 
     # ---------- inicialización ----------
     def initialize(self, n_nodes, n_edges, n_orders):
@@ -118,19 +118,43 @@ class Simulation:
 
     # ---------- generación de órdenes ----------
     def _generate_orders(self, cnt):
-        stor=[v for v,r in self.node_roles.items() if r=="storage"]
-        cli =[v for v,r in self.node_roles.items() if r=="client"]
+        stor = [v for v, r in self.node_roles.items() if r == "storage"]
+        cli = [v for v, r in self.node_roles.items() if r == "client"]
         for _ in range(cnt):
-            if not stor or not cli: break
-            o,d=random.choice(stor),random.choice(cli)
-            path,used,rechs=self.find_route_with_recharges_bfs(o,d)
-            if not path: continue
-            cost=sum(self.graph.get_edge(path[i],path[i+1]).element()
-                     for i in range(len(path)-1))
-            order=Order(o,d,path,cost,random.randint(1,3),used,rechs,path)
+            if not stor or not cli:
+                break
+            o = random.choice(stor)
+            d = random.choice(cli)
+            path, used, rechs = self.find_route_with_recharges_bfs(o, d)
+            if not path:
+                continue
+
+            # Cálculo seguro del costo
+            cost = 0
+            valid = True
+            for i in range(len(path) - 1):
+                edge = self.graph.get_edge(path[i], path[i + 1])
+                if edge is None or edge.element() is None:
+                    valid = False
+                    break
+                cost += edge.element()
+
+            if not valid:
+                continue  # ignorar rutas con bordes inválidos
+
+            order = Order(
+                origin=o,
+                destination=d,
+                route=path,
+                cost=cost,
+                priority=random.randint(1, 3),
+                battery_used=used or 0,
+                recharges=rechs,
+                full_path=path,
+            )
             self.orders.append(order)
 
-            # ----- registrar ruta -----
+            # --- registrar ruta ---
             route_obj = Route([v.element() for v in path], cost)
             self.routes.append(route_obj)
 
@@ -139,9 +163,10 @@ class Simulation:
             else:
                 self.route_avl = avl_insert(self.route_avl, str(route_obj))
 
-            rstr=str(route_obj)
-            self.route_counts.set(rstr,
-                                  self.route_counts.get(rstr,0)+1)
+            rstr = str(route_obj)
+            prev_count = self.route_counts.get(rstr, 0)
+            self.route_counts.set(rstr, prev_count + 1)
+
 
     # ---------- estadísticas ----------
     def get_route_counts(self):

@@ -18,3 +18,10 @@ def get_cliente(cliente_id: str):
         if cliente.client_id == cliente_id:
             return cliente.to_dict()
     raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+@router.get("/test_clients")
+def test_clients():
+    sim = load_simulation()
+    clients = sim.get_clients()
+    print("Clientes en API:", clients)  
+    return {"num_clients": len(clients), "clients": [c.to_dict() for c in clients]}
