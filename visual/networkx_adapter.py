@@ -2,26 +2,18 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-def graph_to_networkx(custom_graph, orders=None):
-    """
-    Convierte un grafo personalizado en un grafo de NetworkX, incluyendo roles y prioridades.
-
-    :param custom_graph: Instancia de la clase Graph personalizada.
-    :param orders: Lista de órdenes para anotar prioridad en los nodos destino.
-    :return: Grafo de NetworkX.
-    """
+def graph_to_networkx(custom_graph, node_roles=None, orders=None):
     G = nx.Graph()
     priority_map = {}
 
-    # Construir mapa de prioridades por nodo destino
     if orders:
         for order in orders:
             dest = str(order.destination)
             priority_map[dest] = order.priority
 
     for v in custom_graph.vertices():
-        role = getattr(v, 'role', 'unknown')  # Asegura que Vertex tenga atributo 'role'
         label = str(v)
+        role = node_roles.get(v, 'unknown') if node_roles else 'unknown'
         G.add_node(label, role=role, priority=priority_map.get(label, None))
 
     for edge in custom_graph.edges():
@@ -65,8 +57,13 @@ def draw_networkx_graph(G, path_nodes=None):
             else:
                 node_colors.append("gray")
 
+    edges_in_path = set()
+    if path_nodes:
+        edges_in_path = {(path_nodes[i], path_nodes[i+1]) for i in range(len(path_nodes)-1)}
+        edges_in_path.update({(path_nodes[i+1], path_nodes[i]) for i in range(len(path_nodes)-1)})
+
     for u, v in G.edges():
-        if path_nodes and u in path_nodes and v in path_nodes:
+        if (u, v) in edges_in_path:
             edge_colors.append("red")
         else:
             edge_colors.append("gray")

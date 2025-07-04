@@ -26,7 +26,7 @@ class MapBuilder:
             u, v = e.endpoints()
             folium.PolyLine(
                 [self.coords[u], self.coords[v]],
-                weight=1, color="gray", opacity=0.6
+                weight=1, color="blue", opacity=0.8
             ).add_to(self.m)
 
     # ---------- dibujar MST ----------
@@ -35,13 +35,27 @@ class MapBuilder:
             u, v = e.endpoints()
             folium.PolyLine(
                 [self.coords[u], self.coords[v]],
-                weight=4, color="blue", opacity=0.8
+                weight=4, color="green", opacity=0.8, dashArray="10,10"
+                 
             ).add_to(self.m)
+        
 
-    # ---------- dibujar ruta específica ----------
-    def add_route(self, path, color="red"):
+    # ---------- dibujar ruta especÃ­fica ----------
+    def add_route(self, path, color="red", popup_text=None, dashed=False):
         points = [self.coords[v] for v in path]
-        folium.PolyLine(points, weight=5, color=color).add_to(self.m)
+        style = {
+            "color": color,
+            "weight": 5
+        }
+    
+        polyline = folium.PolyLine(points, **style)
+
+        if popup_text:
+            polyline.add_child(folium.Popup(popup_text))
+
+        polyline.add_to(self.m)
+
+
 
     def finish(self):
         return self.m

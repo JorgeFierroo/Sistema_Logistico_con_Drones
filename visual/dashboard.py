@@ -9,10 +9,11 @@ project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.extend([
     project_root,
     os.path.join(project_root, 'sim'),
-    os.path.join(project_root, 'domain'),
+    os.path.join(project_root, 'domain')
 ])
 
 from sim.init_simulation import run_simulation, get_current_simulation
+from sim.persistence import * 
 from visual.networkx_adapter import graph_to_networkx, draw_networkx_graph, draw_mst_graph
 from visual.map.map_builder    import MapBuilder
 from visual.map.flight_summary import flight_summary
@@ -58,6 +59,7 @@ with tabs[0]:
             "current_path": None,           # ruta actual seleccionada
             "show_mst": False,              # mostrar árbol de expansión mínima (MST)
         })
+        save_simulation(sim)
         st.success("¡Simulación inicializada correctamente!")
 
 # ---------- Pestaña 2 ----------
@@ -71,16 +73,6 @@ with tabs[1]:
         col1, col2 = st.columns(2)
 
         with col1:
-            # --- NetworkX Grafo ---
-            G_nx = graph_to_networkx(sim.get_graph(), sim.get_orders())
-            fig  = draw_networkx_graph(G_nx, st.session_state.get("current_path"))
-            st.pyplot(fig)
-
-            if st.button("🌳 Mostrar MST"):
-                mst_edges  = sim.graph.kruskal_mst()
-                edge_tuples = [(str(e.endpoints()[0]), str(e.endpoints()[1])) for e in mst_edges]
-                fig_mst = draw_mst_graph(G_nx, edge_tuples)
-                st.pyplot(fig_mst)
 
             # --- Map View ---
             st.subheader("🗺️ Mapa Interactivo")
@@ -89,48 +81,83 @@ with tabs[1]:
             if st.session_state.get("show_mst"):
                 mb.add_mst(sim.get_mst_edges())
             if st.session_state.get("last_path"):
-                mb.add_route(st.session_state.last_path, color="red")
+                path = st.session_state.last_path
+                battery = sum(sim.graph.get_edge(path[i], path[i+1]).element() for i in range(len(path)-1))
+                popup = f"🔋 Batería estimada: {battery}"
+                mb.add_route(
+                st.session_state.last_path,
+                color="red",
+                popup_text=f"Ruta actual | Batería: {battery}",
+                dashed=True
+                )
             st_folium(mb.finish(), width=700, height=500)
 
-        with col2:
-            # --- Calcular ruta normal ---
-            st.subheader("📌 Calcular Ruta (solo visualizar)")
-            all_nodes = [str(v) for v in sim.graph.vertices()]
-            origin = st.selectbox("Origen", all_nodes, key="o_net")
-            destination = st.selectbox("Destino", all_nodes, key="d_net")
+            # --- 🚁 Entregar (crear orden real) ---
+            st.subheader("📦 Calcular y Entregar (crear orden real)")
+            origin = st.session_state.get("origin_select")
+            destination = st.session_state.get("dest_select")
 
-            if st.button("✈️ Calcular Ruta"):
+            if origin and destination:
+                o_v = next(v for v in sim.graph.vertices() if str(v) == origin)
+                d_v = next(v for v in sim.graph.vertices() if str(v) == destination)
+                if st.button("🚁 Entregar Orden"):
+                    res = flight_summary(sim, o_v, d_v)
+                    save_simulation(sim)
+                    if res:
+                        info, order = res
+                        st.success(f"✅ Entregado | Cost: {info['dist']} | Battery: {info['battery_used']}")
+                        st.session_state.last_path = info['path']
+                    else:
+                        st.error("❌ No ruta viable con la autonomía actual.")
+            else:
+                st.info("Selecciona origen y destino en la columna de la derecha.")
+            
+
+        with col2:
+            st.markdown("## 🚀 Calculate Route")
+
+            # --- Select origen y destino con roles ---
+            all_nodes = [str(v) for v in sim.graph.vertices()]
+            clients  = [str(v) for v in sim.graph.vertices() if sim.node_roles[v] == "client"]
+            storages = [str(v) for v in sim.graph.vertices() if sim.node_roles[v] == "storage"]
+
+            origin = st.selectbox("Nodo Origen (Solo almacen)", storages, key="origin_select")
+            destination = st.selectbox("Nodo Destino (Solo cliente)", clients, key="dest_select")
+
+            # --- Selector de algoritmo ---
+            st.markdown("### Routing Algorithm")
+            algorithm = st.radio("Algoritmo de ruta", ["Dijkstra"], index=0)
+
+            # --- Botones ---
+            if st.button("Calculate Route"):
                 o_v = next(v for v in sim.graph.vertices() if str(v) == origin)
                 d_v = next(v for v in sim.graph.vertices() if str(v) == destination)
                 path, used_bat, recs = sim.find_route_with_recharges_bfs(o_v, d_v)
+
                 if path:
                     cost = sum(sim.graph.get_edge(path[i], path[i+1]).element()
                             for i in range(len(path)-1))
-                    st.session_state.current_path = [str(v) for v in path]
-                    st.success("Ruta calculada")
-                    st.write(f"Path: {' → '.join(str(v) for v in path)}")
-                    st.write(f"Cost: {cost}  |  Battery: {used_bat}")
-                    st.write("Recargas: " + (", ".join(str(v) for v in recs) if recs else "None"))
+                    st.session_state.last_path = path
+                    st.success("Calcular Ruta")
+                    st.write(f"*Path:* {' → '.join(str(v) for v in path)}")
+                    st.write(f"*Costo:* {cost}  |  *Bateria usada:* {used_bat}")
+                    st.write("🔋 *Recargas:* " + (", ".join(str(v) for v in recs) if recs else "None"))
                 else:
-                    st.error("No se encontró una ruta válida.")
+                    st.error("No valid route found.")
 
-            # --- Entregar (crear orden real) ---
-            st.subheader("📦 Calcular y Entregar (crear orden real)")
-            o = st.selectbox("Origen Entrega", all_nodes, key="o_map")
-            d = st.selectbox("Destino Entrega", all_nodes, key="d_map")
-            if st.button("🚁 Entregar"):
-                o_v = next(v for v in sim.graph.vertices() if str(v)==o)
-                d_v = next(v for v in sim.graph.vertices() if str(v)==d)
-                res = flight_summary(sim, o_v, d_v)
-                if res:
-                    info, order = res
-                    st.success(f"Entregado | Cost {info['dist']} | Bat {info['battery_used']}")
-                    st.session_state.last_path = info['path']
-                else:
-                    st.error("No ruta viable con la autonomía actual.")
-
-            if st.button("🌲 Toggle MST en Mapa"):
+            if st.button("Mostrar MST (Kruskal)"):
                 st.session_state.show_mst = not st.session_state.get("show_mst", False)
+
+            # --- Stats de tipos de nodos ---
+            st.markdown("### Tipos de Nodo:")
+            by_role = sim.get_visits_by_role()
+            storage_count  = len([v for v in sim.graph.vertices() if sim.node_roles[v] == "storage"])
+            recharge_count = len([v for v in sim.graph.vertices() if sim.node_roles[v] == "recharge"])
+            client_count   = len([v for v in sim.graph.vertices() if sim.node_roles[v] == "client"])
+
+            st.markdown(f"- 📦 *Storage Nodes:* {storage_count}")
+            st.markdown(f"- 🔋 *Recharge Nodes:* {recharge_count}")
+            st.markdown(f"- 👤 *Client Nodes:* {client_count}")
 
 # ---------- Pestaña 3 (Clients & Orders) ----------
 with tabs[2]:
@@ -139,6 +166,7 @@ with tabs[2]:
         st.warning("⚠️ Initialize a simulation first.")
     else:
         sim = st.session_state.simulation
+        
         st.markdown("### Clients")
         st.json([c.to_dict() for c in sim.clients])
         st.markdown("### Orders")

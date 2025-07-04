@@ -57,11 +57,13 @@ class Simulation:
         for i,v in enumerate(verts):
             if i < ns:
                 self.node_roles[v] = "storage"
-            elif i < ns+nr:
+            elif i < ns + nr:
                 self.node_roles[v] = "recharge"
             else:
                 self.node_roles[v] = "client"
-                self.clients.append(Client())
+                client = Client()
+                client.vertex = v             # <-- Asociación importante
+                self.clients.append(client)
 
     # ---------- BFS con autonomía ----------
     def find_route_with_recharges_bfs(self, start, goal, battery_max=50):

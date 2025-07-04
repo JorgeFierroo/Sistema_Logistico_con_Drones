@@ -1,13 +1,13 @@
 import random
 
 class Client:
-
     _contador = 0
 
     def __init__(self):
         Client._contador += 1
         self.client_id = f"C{Client._contador:03d}"
         self.name = f"Client{Client._contador}"
+        self.vertex = None  
         self.type = random.choice(["alta", "media", "baja"])
         self.orders = []
 
@@ -21,3 +21,9 @@ class Client:
             "Tipo": self.type,
             "Ordenes": len(self.orders)
         }
+
+    def __str__(self):
+        return f"[{self.client_id}] {self.name} ({self.type}) - {len(self.orders)} orden(es)"
+
+    def __repr__(self):
+        return self.__str__()
