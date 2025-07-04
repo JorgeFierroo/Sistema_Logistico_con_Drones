@@ -1,33 +1,33 @@
-class Arista:
-    """Estructura liviana de una arista para un grafo."""
-    __slots__ = '_origen', '_destino', '_elemento'
+class Edge:
+    """Lightweight edge structure for a graph."""
+    __slots__ = '_origin', '_destination', '_element'
 
     def __init__(self, u, v, x):
-        """No llamar directamente al constructor. Usar insertar_arista(u, v, x) del Grafo."""
-        self._origen = u
-        self._destino = v
-        self._elemento = x
+        """Do not call constructor directly. Use Graph's insert_edge(u,v,x)."""
+        self._origin = u
+        self._destination = v
+        self._element = x
 
-    def extremos(self):
-        """Devuelve una tupla (u, v) con los vértices origen y destino."""
-        return (self._origen, self._destino)
+    def endpoints(self):
+        """Return (u,v) tuple for vertices u and v."""
+        return (self._origin, self._destination)
 
-    def opuesto(self, v):
-        """Devuelve el vértice opuesto a v en esta arista."""
-        return self._destino if v is self._origen else self._origen
+    def opposite(self, v):
+        """Return the vertex that is opposite v on this edge."""
+        return self._destination if v is self._origin else self._origin
 
-    def elemento(self):
-        """Devuelve el elemento asociado a esta arista."""
-        return self._elemento
+    def element(self):
+        """Return element associated with this edge."""
+        return self._element
 
     def __hash__(self):
-        """Permite que la arista sea usada como clave en un diccionario o conjunto."""
-        return hash((self._origen, self._destino))
+        """Allow edge to be a map/set key."""
+        return hash((self._origin, self._destination))
 
     def __str__(self):
-        """Representación en cadena de la arista."""
-        return f"({self._origen}->{self._destino}):{self._elemento}"
+        """String representation of the edge."""
+        return f"({self._origin}->{self._destination}):{self._element}"
 
     def __repr__(self):
-        """Representación oficial de la arista."""
-        return f"Arista({self._origen}, {self._destino}, {self._elemento})"
+        """Official string representation."""
+        return f"Edge({self._origin}, {self._destination}, {self._element})"

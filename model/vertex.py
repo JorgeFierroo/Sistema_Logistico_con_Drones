@@ -1,20 +1,21 @@
-class Vertice:
-    """Estructura ligera de un vértice para un grafo."""
-    __slots__ = '_elemento'
+class Vertex:
+    """Lightweight vertex structure for a graph."""
+    __slots__ = '_element', 'role'
 
-    def __init__(self, elemento):
-        """No llames directamente al constructor. Usa insertar_vertice(elemento) del Grafo."""
-        self._elemento = elemento
+    def __init__(self, element):
+        """Do not call constructor directly. Use Graph's insert_vertex(element)."""
+        self._element = element
+        self.role = None
 
-    def elemento(self):
-        """Devuelve el elemento asociado a este vértice."""
-        return self._elemento
+    def element(self):
+        """Return element associated with this vertex."""
+        return self._element
 
     def __hash__(self):
         return hash(id(self))
 
     def __str__(self):
-        return str(self._elemento)
+        return str(self._element)
 
     def __repr__(self):
-        return f"Vertice({self._elemento})"
+        return f"Vertex({self._element})"

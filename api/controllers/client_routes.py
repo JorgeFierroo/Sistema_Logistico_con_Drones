@@ -27,6 +27,6 @@ def get_client_info(client_id: str):
     Obtiene información detallada de un cliente específico.
     """
     for client in simulation.get_clients():
-        if str(client) == client_id:
+        if client.client_id == client_id:
             return client.to_dict()
     raise HTTPException(status_code=404, detail="Cliente no encontrado")

@@ -1,46 +1,39 @@
-class MapHash:
-    def __init__(self, capacidad=100):
-        self.capacidad = capacidad
-        self.tabla = [[] for _ in range(capacidad)]
+class HashMap:
+    def __init__(self, size=100):
+        self.size = size
+        self.map = [[] for _ in range(size)]
 
-    def _hash(self, clave):
-        return hash(clave) % self.capacidad
+    def _hash(self, key):
+        return hash(key) % self.size
 
-    def insertar(self, clave, valor):
-        indice = self._hash(clave)
-        # Verificar si ya existe y actualizar
-        for i, (k, _) in enumerate(self.tabla[indice]):
-            if k == clave:
-                self.tabla[indice][i] = (clave, valor)
+    def set(self, key, value):
+        index = self._hash(key)
+        for pair in self.map[index]:
+            if pair[0] == key:
+                pair[1] = value
                 return
-        self.tabla[indice].append((clave, valor))
+        self.map[index].append([key, value])
 
-    def obtener(self, clave):
-        indice = self._hash(clave)
-        for k, v in self.tabla[indice]:
-            if k == clave:
-                return v
-        return None
+    def get(self, key, default=None):  # <-- CAMBIO AQUÍ
+        index = self._hash(key)
+        for pair in self.map[index]:
+            if pair[0] == key:
+                return pair[1]
+        return default  # <-- DEVUELVE el valor por defecto si no lo encuentra
 
-    def eliminar(self, clave):
-        indice = self._hash(clave)
-        self.tabla[indice] = [(k, v) for (k, v) in self.tabla[indice] if k != clave]
+    def remove(self, key):
+        index = self._hash(key)
+        for i, pair in enumerate(self.map[index]):
+            if pair[0] == key:
+                del self.map[index][i]
+                return True
+        return False
 
-    def contiene(self, clave):
-        indice = self._hash(clave)
-        return any(k == clave for (k, _) in self.tabla[indice])
+    def keys(self):
+        return [pair[0] for bucket in self.map for pair in bucket]
 
-    def claves(self):
-        for cubeta in self.tabla:
-            for k, _ in cubeta:
-                yield k
+    def values(self):
+        return [pair[1] for bucket in self.map for pair in bucket]
 
-    def valores(self):
-        for cubeta in self.tabla:
-            for _, v in cubeta:
-                yield v
-
-    def elementos(self):
-        for cubeta in self.tabla:
-            for elemento in cubeta:
-                yield elemento
+    def items(self):
+        return [(pair[0], pair[1]) for bucket in self.map for pair in bucket]

@@ -113,16 +113,3 @@ def pre_order(root):
         print(f"{root.key} ", end="")
         pre_order(root.left)
         pre_order(root.right)
-
-# Prueba
-if __name__ == "__main__":
-    root = None
-    for key in [9, 5, 10, 0, 6, 11, -1, 1, 2]:
-        root = insert(root, key)
-
-    print("Preorden del AVL construido:")
-    pre_order(root)
-
-    root = delete_node(root, 10)
-    print("\nPreorden luego de eliminar 10:")
-    pre_order(root)

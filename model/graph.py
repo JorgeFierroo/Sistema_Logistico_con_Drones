@@ -1,61 +1,96 @@
 from vertex import Vertex
 from edge import Edge
 
-class Grafo:
-    def __init__(self, dirigido=False):
-        self._adyacentes_salida = {}
-        self._adyacentes_entrada = {} if dirigido else self._adyacentes_salida
-        self._dirigido = dirigido
+class Graph:
+    def __init__(self, directed=False):
+        self._outgoing = {}
+        self._incoming = {} if directed else self._outgoing
+        self._directed = directed
 
-    def es_dirigido(self):
-        return self._dirigido
+    def is_directed(self):
+        return self._directed
 
-    def insertar_vertice(self, elemento):
-        v = Vertex(elemento)
-        self._adyacentes_salida[v] = {}
-        if self._dirigido:
-            self._adyacentes_entrada[v] = {}
+    def insert_vertex(self, element):
+        v = Vertex(element)
+        self._outgoing[v] = {}
+        if self._directed:
+            self._incoming[v] = {}
         return v
 
-    def insertar_arista(self, u, v, elemento):
-        e = Edge(u, v, elemento)
-        self._adyacentes_salida[u][v] = e
-        self._adyacentes_entrada[v][u] = e
+    def insert_edge(self, u, v, element):
+        e = Edge(u, v, element)
+        self._outgoing[u][v] = e
+        self._incoming[v][u] = e
         return e
 
-    def eliminar_arista(self, u, v):
-        if u in self._adyacentes_salida and v in self._adyacentes_salida[u]:
-            del self._adyacentes_salida[u][v]
-            del self._adyacentes_entrada[v][u]
+    def remove_edge(self, u, v):
+        if u in self._outgoing and v in self._outgoing[u]:
+            del self._outgoing[u][v]
+            del self._incoming[v][u]
 
-    def eliminar_vertice(self, v):
-        for u in list(self._adyacentes_salida.get(v, {})):
-            self.eliminar_arista(v, u)
-        for u in list(self._adyacentes_entrada.get(v, {})):
-            self.eliminar_arista(u, v)
-        self._adyacentes_salida.pop(v, None)
-        if self._dirigido:
-            self._adyacentes_entrada.pop(v, None)
+    def remove_vertex(self, v):
+        for u in list(self._outgoing.get(v, {})):
+            self.remove_edge(v, u)
+        for u in list(self._incoming.get(v, {})):
+            self.remove_edge(u, v)
+        self._outgoing.pop(v, None)
+        if self._directed:
+            self._incoming.pop(v, None)
 
-    def obtener_arista(self, u, v):
-        return self._adyacentes_salida.get(u, {}).get(v)
+    def get_edge(self, u, v):
+        return self._outgoing.get(u, {}).get(v)
 
     def vertices(self):
-        return self._adyacentes_salida.keys()
+        return self._outgoing.keys()
 
-    def aristas(self):
-        vistas = set()
-        for mapa in self._adyacentes_salida.values():
-            vistas.update(mapa.values())
-        return vistas
+    def edges(self):
+        seen = set()
+        for map in self._outgoing.values():
+            seen.update(map.values())
+        return seen
 
-    def vecinos(self, v):
-        return self._adyacentes_salida[v].keys()
+    def neighbors(self, v):
+        return self._outgoing[v].keys()
 
-    def grado(self, v, salida=True):
-        ady = self._adyacentes_salida if salida else self._adyacentes_entrada
-        return len(ady[v])
+    def degree(self, v, outgoing=True):
+        adj = self._outgoing if outgoing else self._incoming
+        return len(adj[v])
 
-    def aristas_incidentes(self, v, salida=True):
-        ady = self._adyacentes_salida if salida else self._adyacentes_entrada
-        return ady[v].values()
+    def incident_edges(self, v, outgoing=True):
+        adj = self._outgoing if outgoing else self._incoming
+        return adj[v].values()
+
+    def kruskal_mst(self):
+        parent = {}
+        rank = {}
+
+        def find(v):
+            if parent[v] != v:
+                parent[v] = find(parent[v])
+            return parent[v]
+
+        def union(u, v):
+            root1 = find(u)
+            root2 = find(v)
+            if root1 != root2:
+                if rank[root1] > rank[root2]:
+                    parent[root2] = root1
+                else:
+                    parent[root1] = root2
+                    if rank[root1] == rank[root2]:
+                        rank[root2] += 1
+
+        mst = []
+        for v in self.vertices():
+            parent[v] = v
+            rank[v] = 0
+
+        sorted_edges = sorted(self.edges(), key=lambda e: e.element())
+
+        for edge in sorted_edges:
+            u, v = edge.endpoints()
+            if find(u) != find(v):
+                union(u, v)
+                mst.append(edge)
+
+        return mst
